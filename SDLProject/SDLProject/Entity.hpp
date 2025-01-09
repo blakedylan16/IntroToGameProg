@@ -15,64 +15,72 @@ enum EntityType { PLATFORM, BIRD, ENEMY, FONT };
 
 class Entity {
 protected:
-    static constexpr GLint  NUMBER_OF_TEXTURES = 1,
-                            LEVEL_OF_DETAIL    = 0,
-                            TEXTURE_BORDER     = 0;
-    
-    bool m_is_active;
-    
     EntityType m_type;
     
-    /* ----- PHYSICS ------ */
-    vec3    m_position;
+    //    bool m_is_active;
     
     /* ----- TRANSFORMATIONS ----- */
-    vec3    m_scale;
+    vec3    m_movement,
+            m_position,
+            m_scale;
+    
     mat4    m_model_matrix;
     
+
+    
+    /* ----- ANIMATION ----- */
     GLuint  m_texture_id;
+
+    int m_anim_frames,
+        m_anim_rows,
+        m_anim_cols,
+        m_anim_index;
+    
+    int *m_anim_indices = nullptr;
+    float m_anim_time = 0.0f;
     
 public:
-    
-//    bool m_collided_top      = false,
-//         m_collided_bottom   = false,
-//         m_collided_left     = false,
-//         m_collided_right    = false;
-//    
-//    bool    m_platform_collision = false,
-//            m_enemy_collision    = false;
     
     // ————— METHODS ————— //
     Entity(EntityType type, vec3 pos = vec3(0.0f));
 //    virtual ~Entity();
-
-    bool const check_collision(const Entity* other) const;
-    void check_collisonX(const Entity* collidables, int collidablesCount);
-    void check_collisonY(const Entity* collidables, int collidablesCount);
     
-    void activate();
-    void deactivate();
+    void draw_sprite_from_texture_atlas(ShaderProgram *program, int index);
     
-    bool const get_active_state();
+    void update(float delta_time);
+    void render(ShaderProgram* program);
     
-    void draw_object(ShaderProgram* program);
+    void normalize_movement() { m_movement = normalize(m_movement); };
     
-    GLuint load_texture(const char* filepath);
+    
+//    void activate();
+//    void deactivate();
+//    bool const get_active_state();
     
     /* ————— GETTERS ————— */
-    EntityType get_type() const;
+    EntityType get_type() const { return m_type; };
     
-    vec3 const get_pos() const;
-    vec3 const get_scale() const;
+    vec3 const get_pos()    const { return m_position; };
+    vec3 const get_mov()    const { return m_movement; };
+    vec3 const get_scale()  const { return m_scale; };
     
-    
-    
-//    bool const getPlatformCollision()   { return m_platformCollision; };
-//    bool const getEnemyCollison()       { return m_enemyCollision; };
+    int const get_anim_cols()   const { return m_anim_cols; };
+    int const get_anim_rows()   const { return m_anim_rows; };
+    int const get_anim_frames() const { return m_anim_frames; };
+    int const get_anim_index()  const { return m_anim_index; };
+    float const get_anim_time() const { return m_anim_time; };
     
     /* ————— SETTERS ————— */
-    void set_position(vec3 pos);
-    void set_scale(vec3 scale);
+    void set_pos(vec3 pos)      { m_position = pos; };
+    void set_mov(vec3 mov)      { m_movement = mov; };
+    void set_scale(vec3 scale)  { m_scale = scale; };
+    void set_texture(GLuint id) {m_texture_id = id; };
+    
+    void set_anim_cols(int cols)        { m_anim_cols = cols; };
+    void set_anim_rows(int rows)        { m_anim_rows = rows; };
+    void set_anim_frames(int frames)    { m_anim_frames = frames; };
+    void set_anim_index(int index)      { m_anim_index = index; };
+    void set_anim_time(int time)        { m_anim_time = time; };
     
 //    void const setHeight(float newHeight)   { m_height = newHeight; };
 //    void const setWidth(float newWidth)     { m_width = newWidth; };

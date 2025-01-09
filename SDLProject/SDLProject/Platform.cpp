@@ -37,7 +37,7 @@ void Platform::update() {
     m_model_matrix = glm::scale(m_model_matrix, m_scale);
 }
 
-void Platform::render(ShaderProgram *program) {
-    program->SetModelMatrix(m_model_matrix);
-    draw_object(program);
-}
+//void Platform::render(ShaderProgram *program) {
+//    program->SetModelMatrix(m_model_matrix);
+//    draw_object(program);
+//}

@@ -17,6 +17,10 @@ using namespace glm;
 class Bird : public Entity {
 private:
     
+    // special case for lunar lander proj
+    int m_flap[6];
+    
+    
     vec3    m_hitbox_min, m_hitbox_max;
     
     /* ----- PHYSICS/TRANSFORMATIONS ----- */
@@ -31,49 +35,38 @@ private:
     
     
     /* ————— ANIMATION ————— */
-    int m_animation_frames;
-    std::vector<std::vector<int>> m_flapping_animation;
     
-    int m_rows, m_cols;
+    
+    std::vector<std::vector<int>> m_flapping_animation;
     
     bool flapping = false;
     
     float   m_width     = 1,
             m_height    = 1;
     
-    int *m_animation_flap   = NULL;
-    
-    float m_animation_time    = 0.0f;
-    
 public:
     
     // ————— STATIC VARIABLES ————— //
-    static const int SECONDS_PER_FRAME = 4;
-    static const int LEFT  = 0,
-                     RIGHT = 1,
-                     UP    = 2,
-                     DOWN  = 3;
+    static constexpr int SECONDS_PER_FRAME = 4;
     
     /* ----- METHODS ----- */
     Bird(vec3 initial_position = vec3(0.0f),
          vec3 hitbox_size = vec3(0.0f));
     
+    
+    
+    void update(float delta_time);
+    
     void translate(const vec3 pos);
     void tilt(int angle);
-    void update_hitbox(const vec3 pos);
-    void draw_sprite_from_texture_atlas(ShaderProgram *program,
-                                        int index);
-    GLuint load_texture(const char* filepath, int rows, int cols);
+//    void update_hitbox(const vec3 pos);
     
-    void init_animation(int rows, int cols);
+    
+    void init_anim();
     
     void reset_flapping();
     void process_flapping();
     bool flap();
-    
-    
-    void update(float delta_time);
-    void render(ShaderProgram* program, int animation_index);
     
     /* ----- GETTERS ----- */
     vec3 const get_velocity()       const { return m_velocity; };
@@ -87,6 +80,9 @@ public:
     void set_movement(const vec3 mov)           { m_movement = mov; };
     void set_velocity(const vec3 vel)           { m_velocity = vel; };
     void set_acceleration(const vec3 accel)     { m_acceleration = accel; };
+    
+    void add_anim_time(const float delta_time) { m_anim_time += delta_time; };
+    void anim_iterate() { m_anim_index++; };
     
     void stop_movement() { m_velocity = vec3(0.0f); };
     

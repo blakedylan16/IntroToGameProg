@@ -29,17 +29,74 @@
 using namespace glm;
 
 /* ----- METHODS ----- */
-Entity::Entity(EntityType type, vec3 pos) :
-m_is_active(true), m_type(type), m_position(pos) {
-    m_model_matrix = mat4(1.0f);
+Entity::Entity(EntityType type, vec3 init_pos) : m_type(type), m_position(init_pos),  m_model_matrix(mat4(1.0f)), m_movement(vec3(0.0f)),  m_scale(vec3(1.0f, 1.0f, 0.0f)), m_anim_index(0), m_anim_time(0.0f) { }
+
+void Entity::draw_sprite_from_texture_atlas(ShaderProgram *program,
+                                          int index) {
+    // Step 1: Calculate the UV location of the indexed frame
+    float u_coord = (float) (index % m_anim_cols) / (float) m_anim_cols;
+    float v_coord = (float) (index / m_anim_cols) / (float) m_anim_rows;
+
+    // Step 2: Calculate its UV size
+    float width = 1.0f / (float) m_anim_cols;
+    float height = 1.0f / (float) m_anim_rows;
+
+    // Step 3: Just as we have done before, match the texture coordinates to the vertices
+    float tex_coords[] = {
+        u_coord, v_coord + height,
+        u_coord + width, v_coord + height,
+        u_coord + width, v_coord,
+        u_coord, v_coord + height,
+        u_coord + width, v_coord,
+        u_coord, v_coord
+    };
+
+    float vertices[] = {
+        -0.5, -0.5,
+         0.5, -0.5,
+         0.5,  0.5,
+        -0.5, -0.5,
+         0.5,  0.5,
+        -0.5,  0.5
+    };
+
+    // Step 4: And render
+    if (m_texture_id == 0) {
+        LOG("ERROR: Invalid texture ID!");
+        return;
+    }
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_texture_id);
+    
+
+    glVertexAttribPointer(program->positionAttribute, 2,
+                          GL_FLOAT, false, 0, vertices);
+    glEnableVertexAttribArray(program->positionAttribute);
+
+    glVertexAttribPointer(program->texCoordAttribute, 2, GL_FLOAT, false, 0,
+                          tex_coords);
+    glEnableVertexAttribArray(program->texCoordAttribute);
+    
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    
+    glDisableVertexAttribArray(program->positionAttribute);
+    glDisableVertexAttribArray(program->texCoordAttribute);
 }
 
-void Entity::activate()     { m_is_active = true; }
-void Entity::deactivate()   { m_is_active = false; }
 
-bool const Entity::get_active_state()   { return m_is_active; }
+void Entity::update(float delta_time) {
+    m_model_matrix = mat4(1.0f);
+    m_model_matrix = translate(m_model_matrix, m_position);
+}
 
-void Entity::draw_object(ShaderProgram* program) {
+void Entity::render(ShaderProgram* program) {
+    program->SetModelMatrix(m_model_matrix);
+    
+    if (m_anim_indices != NULL) {
+        draw_sprite_from_texture_atlas(program, m_anim_indices[m_anim_index]);
+        return;
+    }
+    
     float vertices[] = {
         -0.5, -0.5,
          0.5, -0.5,
@@ -70,53 +127,14 @@ void Entity::draw_object(ShaderProgram* program) {
             
         glDisableVertexAttribArray(program->positionAttribute);
         glDisableVertexAttribArray(program->texCoordAttribute);
+    
 }
 
-GLuint Entity::load_texture(const char *filepath) {
-    int width, height, number_of_components;
-    LOG("Attempting to load texture: " << filepath);
-    // "load" dynamically allocates memory
-    unsigned char* image = stbi_load(filepath, &width, &height,
-                                     &number_of_components, STBI_rgb_alpha);
-
-    if (image == nullptr) {
-        LOG("Unable to load image. Make sure the path is correct.");
-        assert(false);
-    }
-    
-    GLuint textureID;                               // declaration
-    glGenTextures(NUMBER_OF_TEXTURES, &textureID);  // assignment
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    
-    glTexImage2D(
-        GL_TEXTURE_2D, LEVEL_OF_DETAIL, GL_RGBA,
-        width, height,
-        TEXTURE_BORDER, GL_RGBA, GL_UNSIGNED_BYTE,
-        image
-    );
-    
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    
-    stbi_image_free(image);
-    
-    m_texture_id = textureID;
-
-    return textureID;
-}
-/* ————— GETTERS ————— */
-EntityType Entity::get_type() const     { return m_type; }
-
-vec3 const Entity::get_pos() const { return m_position; }
-vec3 const Entity::get_scale() const {return m_scale; }
+//void Entity::activate()     { m_is_active = true; }
+//void Entity::deactivate()   { m_is_active = false; }
+//
+//bool const Entity::get_active_state()   { return m_is_active; }
 
 
-//    bool const getPlatformCollision()   { return m_platformCollision; };
-//    bool const getEnemyCollison()       { return m_enemyCollision; };
 
-/* ————— SETTERS ————— */
-void Entity::set_position(vec3 pos)   { m_position = pos; }
-void Entity::set_scale(vec3 scale)    { m_scale = scale; }
 

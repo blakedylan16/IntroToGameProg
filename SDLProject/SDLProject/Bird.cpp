@@ -51,19 +51,19 @@ m_acceleration(GRAVITY), m_flight_power(.4f), m_rotation_angle(0) {
 void Bird::translate(vec3 pos) {
     m_position = pos;
     m_model_matrix = glm::translate(m_model_matrix, m_position);
-    update_hitbox(pos);
+//    update_hitbox(pos);
 }
 
 void Bird::tilt(int angle) { m_rotation_angle += angle * m_speed; }
 
-void Bird::update_hitbox(vec3 pos) {
-    m_hitbox_max += pos;
-    m_hitbox_min += pos;
-}
+//void Bird::update_hitbox(vec3 pos) {
+//    m_hitbox_max += pos;
+//    m_hitbox_min += pos;
+//}
 
 void Bird::update(float delta_time) {
     
-    if (not m_is_active) return;
+//    if (not m_is_active) return;
     
     m_model_matrix = mat4(1.0f);
     
@@ -91,114 +91,16 @@ bool Bird::flap() {
     return flapping;
 }
 
-
-
-void Bird::render(ShaderProgram* program, int animation_index) {
-    program->SetModelMatrix(m_model_matrix);
-    draw_sprite_from_texture_atlas(program, animation_index);
-}
-
-void Bird::init_animation(int rows, int cols) {
-    m_rows = rows;
-    m_cols = cols;
-    m_animation_frames = rows * cols;
+void Bird::init_anim() {
+    m_anim_rows = 2;
+    m_anim_cols = 3;
+    m_anim_frames = m_anim_rows * m_anim_cols;
     
-    m_flapping_animation.resize(rows, std::vector<int>(cols));
-    
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            m_flapping_animation[i][j] = i * rows  + j;
-        }
+    for (int i = 0; i < m_anim_frames; i++) {
+        m_flap[i] = i;
     }
+    m_anim_indices = m_flap;
 }
 
-void Bird::draw_sprite_from_texture_atlas(ShaderProgram *program,
-                                          int index) {
-    // Step 1: Calculate the UV location of the indexed frame
-    float u_coord = (float) (index % m_cols) / (float) m_cols;
-    float v_coord = (float) (index / m_cols) / (float) m_rows;
 
-    // Step 2: Calculate its UV size
-    float width = 1.0f / (float) m_cols;
-    float height = 1.0f / (float) m_rows;
-
-    // Step 3: Just as we have done before, match the texture coordinates to the vertices
-    float tex_coords[] = {
-        u_coord, v_coord + height,
-        u_coord + width, v_coord + height,
-        u_coord + width, v_coord,
-        u_coord, v_coord + height,
-        u_coord + width, v_coord,
-        u_coord, v_coord
-    };
-
-    float vertices[] = {
-        -0.5, -0.5,
-         0.5, -0.5,
-         0.5,  0.5,
-        -0.5, -0.5,
-         0.5,  0.5,
-        -0.5,  0.5
-    };
-
-    // Step 4: And render
-    if (m_texture_id == 0) {
-        LOG("ERROR: Invalid texture ID!");
-        return;
-    }
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_texture_id);
-    
-
-    glVertexAttribPointer(program->positionAttribute, 2,
-                          GL_FLOAT, false, 0, vertices);
-    glEnableVertexAttribArray(program->positionAttribute);
-
-    glVertexAttribPointer(program->texCoordAttribute, 2, GL_FLOAT, false, 0,
-                          tex_coords);
-    glEnableVertexAttribArray(program->texCoordAttribute);
-    
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    
-    glDisableVertexAttribArray(program->positionAttribute);
-    glDisableVertexAttribArray(program->texCoordAttribute);
-}
-
-GLuint Bird::load_texture(const char* filepath, int rows, int cols) {
-    
-    int width, height, number_of_components;
-    LOG("Attempting to load texture: " << filepath);
-    // "load" dynamically allocates memory
-    unsigned char* image = stbi_load(filepath, &width, &height,
-                                     &number_of_components, STBI_rgb_alpha);
-
-    if (image == nullptr) {
-        LOG("Unable to load image. Make sure the path is correct.");
-        assert(false);
-    }
-    
-    GLuint textureID;                               // declaration
-    glGenTextures(NUMBER_OF_TEXTURES, &textureID);  // assignment
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    
-    glTexImage2D(
-        GL_TEXTURE_2D, LEVEL_OF_DETAIL, GL_RGBA,
-        width, height,
-        TEXTURE_BORDER, GL_RGBA, GL_UNSIGNED_BYTE,
-        image
-    );
-    
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    
-    stbi_image_free(image);
-    
-    m_texture_id = textureID;
-    
-    init_animation(rows, cols);
-
-    return textureID;
-}
 

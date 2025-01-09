@@ -8,54 +8,6 @@
 // sprite from https://www.freepik.com/free-vector/flat-design-animation-frames-element-collection_31630031.htm#fromView=keyword&page=1&position=0&uuid=e59fd0c7-c217-4f01-be6a-80318579dcec
 // */
 
-//
-//// will need hitbox and arrows
-//
-//                
-//constexpr int   NUMBER_OF_TEXTURES  = 1;
-//constexpr GLint LEVEL_OF_DETAIL = 0;
-//constexpr GLint TEXTURE_BORDER = 0;
-//
-//int g_bird_flapping[6] = {1, 2, 3, 4, 5, 6};
-//int g_bird_floating = 3;
-//
-//int g_george_walking[4][4] = {
-//    { 1, 5, 9,  13 }, // for George to move to the left,
-//    { 3, 7, 11, 15 }, // for George to move to the right,
-//    { 2, 6, 10, 14 }, // for George to move upwards,
-//    { 0, 4, 8,  12 }  // for George to move downwards
-//};
-//int *g_animation_indices = g_george_walking[3];
-//
-//
-//GLuint g_font_texture_id;
-//
-//float g_bird_wing_power = 5.0f;
-//
-////int g_animation_indices = g_bird_flapping[0];
-//int g_animation_frames = 6;
-//int g_animation_index = 0;
-//
-//float g_animation_time = 0.0f;
-//
-//
-//SDL_Window* g_display_window = nullptr;
-//AppStatus g_app_status = RUNNING;
-//ShaderProgram g_shader_program = ShaderProgram();
-//
-//mat4    g_view_matrix,
-//        g_projection_matrix;
-//
-//const vec3 INIT_BIRD_POS = vec3(0.0f, 0.0f, 0.0f);
-//vec3 g_bird_hitbox = vec3(0.0f, 0.0f, 0.0f);
-//Bird g_bird(INIT_BIRD_POS, g_bird_hitbox);
-//
-//void draw_object(mat4 &object_model_matrix, GLuint &object_texture_id);
-//void draw_object(mat4 &object_model_matrix);
-//
-//
-//
-//
 
 #define LOG(argument) std::cout << argument << '\n'
 #define STB_IMAGE_IMPLEMENTATION
@@ -81,7 +33,13 @@
 using namespace glm;
 
 enum AppStatus { RUNNING, PAUSED, WON, LOST, TERMINATED };
-//enum GameStatus { PAUSED, WON, LOST };
+
+struct GameState {
+    Bird* bird;
+    Platform* plat;
+};
+
+GameState g_state;
 
 constexpr int WINDOW_WIDTH  = 640 * 1.5,
               WINDOW_HEIGHT = 480 * 1.5;
@@ -105,7 +63,6 @@ constexpr char V_SHADER_PATH[] = "shaders/vertex_textured.glsl",
 constexpr float MILLISECONDS_IN_SECOND = 1000.0;
  
 constexpr char  SPRITESHEET_FILEPATH[]  = "bird_spritesheet.png",
-                SPRITESHEET2_FILEPATH[] = "george_0.png",
                 FONTSHEET_FILEPATH[]    = "font1.png",
                 PLATFORM_FILEPATH[]     = "platform_tile.png";
 
@@ -144,9 +101,9 @@ mat4    g_view_matrix,
 
 float previous_ticks = 0.0f;
 
-Bird george(vec3(-2.5f, 0.0f, 0.0f));
+//Bird george(vec3(-2.5f, 0.0f, 0.0f));
 //Bird george2(vec3(2.0f, 0.0f, 0.0f));
-Platform plat(vec3(3.0f, -1.0f, 0.0f), vec3(1.0f, 0.25f, 0.0f));
+//Platform plat(vec3(3.0f, -1.0f, 0.0f), vec3(1.0f, 0.25f, 0.0f));
 
 void initialise();
 void process_input();
@@ -301,10 +258,15 @@ void initialise() {
     glUseProgram(g_shader_program.programID);
     
     glClearColor(BG_RED, BG_BLUE, BG_GREEN, BG_OPACITY);
-    // ANIMATION INDICES
-    george.load_texture(SPRITESHEET_FILEPATH, 2, 3);
-//    george2.load_texture(SPRITESHEET2_FILEPATH, 4,4);
-    plat.load_texture(PLATFORM_FILEPATH);
+    
+    g_state.bird = new Bird(vec3(-2.5f, 0.0f, 0.0f));
+    g_state.plat = new Platform(vec3(3.0f, -1.0f, 0.0f), vec3(1.0f, 0.25f, 0.0f));
+    
+    g_state.bird->set_texture(load_texture(SPRITESHEET_FILEPATH));
+    g_state.bird->init_anim();
+    
+    g_state.plat->set_texture(load_texture(PLATFORM_FILEPATH));
+
     g_font_texture_id = load_texture(FONTSHEET_FILEPATH);
 
     glEnable(GL_BLEND);
@@ -336,11 +298,11 @@ void process_input() {
         if(key_state[SDL_SCANCODE_SPACE]) g_app_status = RUNNING;
     }
     else if (g_app_status == RUNNING) {
-        george.reset_flapping();
-        if (key_state[SDL_SCANCODE_SPACE]) george.process_flapping();
+        g_state.bird->reset_flapping();
+        if (key_state[SDL_SCANCODE_SPACE]) g_state.bird->process_flapping();
         
-        if (key_state[SDL_SCANCODE_LEFT]) george.tilt(1);
-        else if (key_state[SDL_SCANCODE_RIGHT]) george.tilt(-1);
+        if (key_state[SDL_SCANCODE_LEFT]) g_state.bird->tilt(1);
+        else if (key_state[SDL_SCANCODE_RIGHT]) g_state.bird->tilt(-1);
     }
 //    else if (g_app_status == WON) {
 //        if(key_state[SDL_SCANCODE_SPACE])
@@ -357,49 +319,48 @@ void update() {
 
     if (g_app_status == RUNNING) {
         /* ANIMATION */
-        if (george.flap()){
-            g_animation_time += delta_time;
+        if (g_state.bird->flap()){
+            g_state.bird->add_anim_time(delta_time);
             float seconds_per_frame = (float) 1 / FRAMES_PER_SECOND;
             
-            if (g_animation_time >= seconds_per_frame) {
-                g_animation_time = 0.0f;
-                g_animation_index++;
+            if (g_state.bird->get_anim_time() >= seconds_per_frame) {
+                g_state.bird->set_anim_time(0.0f);
+                g_state.bird->anim_iterate();
                 
-                if(g_animation_index >= g_animation_frames) g_animation_index = 0;
+                if(g_state.bird->get_anim_index() >= g_state.bird->get_anim_frames())
+                    g_state.bird->set_anim_index(0);
             }
         }
         
         // check border collisions
-        if (ORTHO_HEIGHT/2 - fabs(george.get_pos().y) - george.get_scale().y / 2 <= 0) {
-            george.stop_movement();
+        if (ORTHO_HEIGHT/2 - fabs(g_state.bird->get_pos().y) - g_state.bird->get_scale().y / 2 <= 0) {
+            g_state.bird->stop_movement();
             g_app_status = LOST;
         }
-        if (ORTHO_WIDTH/2 - fabs(george.get_pos().x) - george.get_scale().x / 2 <= 0) {
-            george.stop_movement();
+        if (ORTHO_WIDTH/2 - fabs(g_state.bird->get_pos().x) - g_state.bird->get_scale().x / 2 <= 0) {
+            g_state.bird->stop_movement();
             g_app_status = LOST;
         }
         
         // check platform collisions
-        vec2 scale_buffer = vec2((george.get_scale().x + plat.get_scale().x),
-                                 george.get_scale().y + plat.get_scale().y);
-        vec2 distance = vec2(fabs(george.get_pos().x - plat.get_pos().x),
-                             fabs(george.get_pos().y - plat.get_pos().y));
+        vec2 scale_buffer = vec2((g_state.bird->get_scale().x + g_state.plat->get_scale().x),
+                                 g_state.bird->get_scale().y + g_state.plat->get_scale().y);
+        vec2 distance = vec2(fabs(g_state.bird->get_pos().x - g_state.plat->get_pos().x),
+                             fabs(g_state.bird->get_pos().y - g_state.plat->get_pos().y));
         distance -= scale_buffer / 2.0f;
-        LOG(distance.x);
-        LOG(distance.y);
         
         if (distance.x < 0 and distance.y < 0) {
-            george.stop_movement();
-            if (george.get_pos().y < plat.get_pos().y)
+            g_state.bird->stop_movement();
+            if (g_state.bird->get_pos().y < g_state.plat->get_pos().y)
                 g_app_status = LOST;
             else g_app_status = WON;
         }
             
         
-        george.update(delta_time);
+        g_state.bird->update(delta_time);
             
     }
-    plat.update();
+    g_state.plat->update();
 }
 
 
@@ -413,8 +374,8 @@ void draw_object(mat4 &object_model_matrix, GLuint &object_texture_id) {
 void render() {
     glClear(GL_COLOR_BUFFER_BIT);
     
-    george.render(&g_shader_program, g_animation_index);
-    plat.render(&g_shader_program);
+    g_state.bird->Entity::render(&g_shader_program);
+    g_state.plat->render(&g_shader_program);
 
     if (g_app_status == PAUSED) {
         draw_text(&g_shader_program, g_font_texture_id, "Don't touch the Border!",
@@ -423,7 +384,7 @@ void render() {
                   0.3f, 0.03f, vec3(-3.35f, 1.6f, 0.0f));
     } else if (g_app_status == WON) {
         draw_text(&g_shader_program, g_font_texture_id, "You won!", 0.3f, 0.03f,
-                  vec3(-2.5f, 2.0f, 0.0f));
+                  vec3(-1.75f, 2.0f, 0.0f));
     } else if (g_app_status == LOST) {
         draw_text(&g_shader_program, g_font_texture_id, "You lost :(", 0.3f, 0.03f,
                   vec3(-2.5f, 2.0f, 0.0f));

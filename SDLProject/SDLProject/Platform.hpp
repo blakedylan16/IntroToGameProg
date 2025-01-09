@@ -21,7 +21,7 @@ public:
     Platform(vec3 pos, vec3 scale = vec3(1.0f, 1.0f, 0.0f));
     
     void update();
-    void render(ShaderProgram* program);
+//    void render(ShaderProgram* program);
 };
 
 #endif // PLATFORM_H
