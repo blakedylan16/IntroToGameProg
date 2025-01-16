@@ -9,7 +9,24 @@
 #ifndef BIRD_H
 #define BIRD_H
 
+#define GL_SILENCE_DEPRECATION
+#define GL_GLEXT_PROTOTYPES 1
+#define LOG(argument) std::cout << argument << '\n'
+
+#ifdef _WINDOWS
+#include <GL/glew.h>
+#endif
+
+#include <SDL.h>
+#include <SDL_opengl.h>
+#include "glm/mat4x4.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "ShaderProgram.h"
 #include "Entity.hpp"
+#include <vector>
+#include <ctime>
+#include "cmath"
+
 #include <vector>
 
 using namespace glm;

@@ -26,7 +26,8 @@
 #include "cmath"
 
 Platform::Platform(vec3 pos, vec3 scale) :
-Entity(PLATFORM, pos), m_scale(scale) {
+Entity(PLATFORM, pos) {
+    m_scale = scale;
     m_model_matrix = glm::translate(m_model_matrix, m_position);
     m_model_matrix = glm::scale(m_model_matrix, m_scale);
 }

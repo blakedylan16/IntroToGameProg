@@ -6,25 +6,6 @@
 //  Copyright © 2025 ctg. All rights reserved.
 //
 
-#define GL_SILENCE_DEPRECATION
-#define GL_GLEXT_PROTOTYPES 1
-#define LOG(argument) std::cout << argument << '\n'
-
-#ifdef _WINDOWS
-#include <GL/glew.h>
-#endif
-
-#include <SDL.h>
-#include <SDL_opengl.h>
-#include "glm/mat4x4.hpp"
-#include "glm/gtc/matrix_transform.hpp"
-#include "ShaderProgram.h"
-#include "stb_image.h"
-#include "Bird.hpp"
-#include "Entity.hpp"
-#include <vector>
-#include <ctime>
-#include "cmath"
 
 // will need hitbox
 // will change all physics methods to fix hitbox
@@ -32,6 +13,8 @@
 //constexpr int   NUMBER_OF_TEXTURES  = 1;
 //constexpr GLint LEVEL_OF_DETAIL = 0;
 //constexpr GLint TEXTURE_BORDER = 0;
+
+#include "Bird.hpp"
 
 Bird::Bird(vec3 initial_pos, vec3 hitbox_size) :
 Entity(BIRD, initial_pos), m_speed(0.8f), m_movement(vec3(0.0f)),
@@ -91,16 +74,6 @@ bool Bird::flap() {
     return flapping;
 }
 
-void Bird::init_anim() {
-    m_anim_rows = 2;
-    m_anim_cols = 3;
-    m_anim_frames = m_anim_rows * m_anim_cols;
-    
-    for (int i = 0; i < m_anim_frames; i++) {
-        m_flap[i] = i;
-    }
-    m_anim_indices = m_flap;
-}
 
 
 

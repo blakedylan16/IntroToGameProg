@@ -16,9 +16,8 @@ using  namespace glm;
 class Platform : public Entity {
 private:
     
-    vec3    m_scale;
 public:
-    Platform(vec3 pos, vec3 scale = vec3(1.0f, 1.0f, 0.0f));
+    Platform(vec3 pos, vec3 scale);
     
     void update();
 //    void render(ShaderProgram* program);
