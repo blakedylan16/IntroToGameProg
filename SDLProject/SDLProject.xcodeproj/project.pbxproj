@@ -15,6 +15,9 @@
 		B64F7EDE2D2D0E640099D183 /* Entity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B64F7ED72D2C69F20099D183 /* Entity.cpp */; };
 		B64F7EF32D34343D0099D183 /* Map.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B64F7EF22D34343C0099D183 /* Map.cpp */; };
 		B64F7EF62D3438AC0099D183 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B64F7EF52D3438A70099D183 /* main.cpp */; };
+		B64F82B72D39C63A0099D183 /* Utility.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B64F82B62D39C6310099D183 /* Utility.cpp */; };
+		B64F82BA2D3A20830099D183 /* Scene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B64F82B92D3A20820099D183 /* Scene.cpp */; };
+		B64F82BD2D3A21120099D183 /* Level1.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B64F82BC2D3A21100099D183 /* Level1.cpp */; };
 		DBDF1B5E2323DE8D007CECB1 /* ShaderProgram.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDF1B5D2323DE8D007CECB1 /* ShaderProgram.cpp */; };
 		DBDF1B612323DE9E007CECB1 /* shaders in Copy Files (5 items) */ = {isa = PBXBuildFile; fileRef = DBDF1B5C2323DE8D007CECB1 /* shaders */; };
 /* End PBXBuildFile section */
@@ -34,17 +37,18 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		B64F7ED32D2897C10099D183 /* Bird.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Bird.hpp; sourceTree = "<group>"; };
-		B64F7ED42D28ACC90099D183 /* Bird.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Bird.cpp; sourceTree = "<group>"; };
 		B64F7ED62D2C652D0099D183 /* Entity.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Entity.hpp; sourceTree = "<group>"; };
 		B64F7ED72D2C69F20099D183 /* Entity.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Entity.cpp; sourceTree = "<group>"; };
-		B64F7EEB2D2EFC8E0099D183 /* Platform.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Platform.hpp; sourceTree = "<group>"; };
-		B64F7EEC2D2F02220099D183 /* Platform.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Platform.cpp; sourceTree = "<group>"; };
 		B64F7EF12D3433D20099D183 /* Map.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Map.hpp; sourceTree = "<group>"; };
 		B64F7EF22D34343C0099D183 /* Map.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Map.cpp; sourceTree = "<group>"; };
 		B64F7EF52D3438A70099D183 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		B64F82B52D39C5DA0099D183 /* Utility.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Utility.hpp; sourceTree = "<group>"; };
+		B64F82B62D39C6310099D183 /* Utility.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Utility.cpp; sourceTree = "<group>"; };
+		B64F82B82D3A204E0099D183 /* Scene.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Scene.hpp; sourceTree = "<group>"; };
+		B64F82B92D3A20820099D183 /* Scene.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Scene.cpp; sourceTree = "<group>"; };
+		B64F82BB2D3A20F70099D183 /* Level1.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Level1.hpp; sourceTree = "<group>"; };
+		B64F82BC2D3A21100099D183 /* Level1.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Level1.cpp; sourceTree = "<group>"; };
 		DBDF1B4F2323DE3F007CECB1 /* SDLProject */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SDLProject; sourceTree = BUILT_PRODUCTS_DIR; };
-		DBDF1B522323DE3F007CECB1 /* BirdLander.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = BirdLander.cpp; sourceTree = "<group>"; };
 		DBDF1B592323DE8D007CECB1 /* ShaderProgram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ShaderProgram.h; sourceTree = "<group>"; };
 		DBDF1B5A2323DE8D007CECB1 /* stb_image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stb_image.h; sourceTree = "<group>"; };
 		DBDF1B5B2323DE8D007CECB1 /* glm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = glm; sourceTree = "<group>"; };
@@ -112,16 +116,17 @@
 		DBDF1B512323DE3F007CECB1 /* SDLProject */ = {
 			isa = PBXGroup;
 			children = (
+				B64F82BB2D3A20F70099D183 /* Level1.hpp */,
+				B64F82BC2D3A21100099D183 /* Level1.cpp */,
 				B64F7EF52D3438A70099D183 /* main.cpp */,
+				B64F82B82D3A204E0099D183 /* Scene.hpp */,
+				B64F82B92D3A20820099D183 /* Scene.cpp */,
 				B64F7EF12D3433D20099D183 /* Map.hpp */,
 				B64F7EF22D34343C0099D183 /* Map.cpp */,
-				B64F7ED32D2897C10099D183 /* Bird.hpp */,
-				B64F7ED42D28ACC90099D183 /* Bird.cpp */,
 				B64F7ED62D2C652D0099D183 /* Entity.hpp */,
 				B64F7ED72D2C69F20099D183 /* Entity.cpp */,
-				B64F7EEB2D2EFC8E0099D183 /* Platform.hpp */,
-				B64F7EEC2D2F02220099D183 /* Platform.cpp */,
-				DBDF1B522323DE3F007CECB1 /* BirdLander.cpp */,
+				B64F82B52D39C5DA0099D183 /* Utility.hpp */,
+				B64F82B62D39C6310099D183 /* Utility.cpp */,
 				DBDF1B592323DE8D007CECB1 /* ShaderProgram.h */,
 				DBDF1B5D2323DE8D007CECB1 /* ShaderProgram.cpp */,
 				DBDF1B5A2323DE8D007CECB1 /* stb_image.h */,
@@ -203,10 +208,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B64F82BA2D3A20830099D183 /* Scene.cpp in Sources */,
 				B64F7EF32D34343D0099D183 /* Map.cpp in Sources */,
 				B64F7EDE2D2D0E640099D183 /* Entity.cpp in Sources */,
+				B64F82B72D39C63A0099D183 /* Utility.cpp in Sources */,
 				B64F7EF62D3438AC0099D183 /* main.cpp in Sources */,
 				DBDF1B5E2323DE8D007CECB1 /* ShaderProgram.cpp in Sources */,
+				B64F82BD2D3A21120099D183 /* Level1.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

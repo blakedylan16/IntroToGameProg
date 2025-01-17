@@ -1,6 +1,6 @@
 ///*
 // Author: Dylan Blake
-// Assignment: Raise of AI
+// Assignment: Platformer
 // I pledge that I have completed this assignment without collaborating
 // with anyone else, in conformance with the NYU School of Engineering
 // Policies and Procedures on Academic Misconduct
@@ -10,7 +10,6 @@
 
 
 #define LOG(argument) std::cout << argument << '\n'
-#define STB_IMAGE_IMPLEMENTATION
 #define GL_SILENCE_DEPRECATION
 #define GL_GLEXT_PROTOTYPES 1
 
@@ -24,12 +23,13 @@
 #include "glm/mat4x4.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "ShaderProgram.h"
-#include "stb_image.h"
 #include <vector>
 #include <ctime>
 #include "cmath"
+
 #include "Map.hpp"
 #include "Entity.hpp"
+#include "Utility.hpp"
 
 #define LEVEL_WIDTH 14
 #define LEVEL_HEIGHT 5
@@ -78,7 +78,6 @@ constexpr char V_SHADER_PATH[] = "shaders/vertex_textured.glsl",
 constexpr float MILLISECONDS_IN_SECOND = 1000.0f;
  
 constexpr char  SPRITESHEET_FILEPATH[]  = "tilemap-characters_packed.png",
-                SPRITESHEET2_FILEPATH[] = "tilemap-characters.png",
                 FONTSHEET_FILEPATH[]    = "font1.png",
                 MAP_TILESET_FILEPATH[]  = "tilemap_packed.png",
                 BGM_FILEPATH[]          = "Sergio_music.mp3",
@@ -103,9 +102,9 @@ constexpr int   CD_QUAL_FREQ    = 44100,  // compact disk (CD) quality frequency
 const vec3 GRAVITY = vec3(0.0f, -10.0f, 0.0f);
 
 unsigned int LEVEL_DATA[] = {
-    0,   0,   0,   0,   0, 0, 0,   0,   0,   0,   0,   0,   0,   0,
-    0,   0,   0,   0,   0, 0, 0,   0,   0,   0,   0,   0,   0,   0,
-    21,  23,  0,   0,   0, 0, 0,   0,   0,   21,  22,  22,  22,  23,
+    20,   0,   0,   0,   0, 0, 0,   0,   0,   0,   0,   0,   0,   0,
+    120,   0,   0,   0,   0, 0, 0,   0,   0,   0,   0,   0,   0,   0,
+    121,  23,  0,   0,   0, 0, 0,   0,   0,   21,  22,  22,  22,  23,
     121, 122, 22,  23,  0, 0, 21,  22,  22,  122, 122, 122, 122, 123,
     121, 122, 122, 123, 0, 0, 121, 122, 122, 122, 122, 122, 122, 123
 };
@@ -144,11 +143,7 @@ void update();
 void render();
 void shutdown();
 
-GLuint load_texture(const char* filepath);
 void draw_object(mat4 &object_model_matrix, GLuint &object_texture_id);
-
-void draw_text(ShaderProgram *shader_program, GLuint font_texture_id, std::string text,
-               float font_size, float spacing, vec3 position);
 
 int main(int argc, char* argv[]) {
     initialise();
@@ -229,12 +224,12 @@ void initialise() {
     
     
     /* ----- MAP SET-UP ----- */
-    GLuint map_texture_id = load_texture(MAP_TILESET_FILEPATH);
+    GLuint map_texture_id = Utility::load_texture(MAP_TILESET_FILEPATH);
     g_state.map = new Map(LEVEL_WIDTH, LEVEL_HEIGHT, LEVEL_DATA,
                           map_texture_id, 1.0f, 20, 9);
     
     /* ----- PLAYER SET-UP ----- */
-    GLuint sprite_tex_id = load_texture(SPRITESHEET_FILEPATH);
+    GLuint sprite_tex_id = Utility::load_texture(SPRITESHEET_FILEPATH);
     
     int player_sprite_index = 0; // which sprite I'm using. specific to tilemap
     std::vector<int> player_walking_anim = { player_sprite_index, player_sprite_index + 1 };
@@ -247,6 +242,7 @@ void initialise() {
                                 .5f,       // size
                                 PLAYER);
     g_state.player->update(g_state.map, 0.0f);
+    g_state.player->set_pos(vec3(1.0f, 0.0f, 0.0f));
     
     /* ----- ENEMY SET-UP ----- */
     int enemy_sprite_index = 21;
@@ -265,7 +261,7 @@ void initialise() {
         g_state.enemies[i]->update(g_state.map);
     }
     
-    g_font_texture_id = load_texture(FONTSHEET_FILEPATH);
+    g_font_texture_id = Utility::load_texture(FONTSHEET_FILEPATH);
 
     /* ----- BLENDING ----- */
     glEnable(GL_BLEND);
@@ -375,15 +371,15 @@ void render() {
     float curr_pos_x = g_state.player->get_pos().x;
 
     if (g_app_status == PAUSED) {
-        draw_text(&g_shader_program, g_font_texture_id, "Hop on the enemies to win!",
+        Utility::draw_text(&g_shader_program, g_font_texture_id, "Hop on the enemies to win!",
                   0.3f, 0.03f, vec3(curr_pos_x - 2, 2.0f, 0.0f));
-        draw_text(&g_shader_program, g_font_texture_id, "Hit Space to Start!",
+        Utility::draw_text(&g_shader_program, g_font_texture_id, "Hit Space to Start!",
                   0.3f, 0.03f, vec3(curr_pos_x - 1.5, 1.6f, 0.0f));
     } else if (g_app_status == WON) {
-        draw_text(&g_shader_program, g_font_texture_id, "You won!", 0.3f, 0.03f,
+        Utility::draw_text(&g_shader_program, g_font_texture_id, "You won!", 0.3f, 0.03f,
                   vec3(curr_pos_x - 2, 2.0f, 0.0f));
     } else if (g_app_status == LOST) {
-        draw_text(&g_shader_program, g_font_texture_id, "You lost :(", 0.3f, 0.03f,
+        Utility::draw_text(&g_shader_program, g_font_texture_id, "You lost :(", 0.3f, 0.03f,
                   vec3(curr_pos_x - 2, 2.0f, 0.0f));
     }
 
@@ -404,112 +400,3 @@ void shutdown() {
     Mix_FreeChunk(g_state.jump_sfx);
     Mix_FreeMusic(g_state.bgm);
 }
-
-void draw_text(ShaderProgram *shader_program, GLuint font_texture_id, std::string text,
-               float font_size, float spacing, vec3 position) {
-    // Scale the size of the fontbank in the UV-plane
-    // We will use this for spacing and positioning
-    float width = 1.0f / FONTBANK_SIZE;
-    float height = 1.0f / FONTBANK_SIZE;
-
-    // Instead of having a single pair of arrays, we'll have a series of pairs—one for
-    // each character. Don't forget to include <vector>!
-    std::vector<float> vertices;
-    std::vector<float> texture_coordinates;
-
-    // For every character...
-    for (int i = 0; i < text.size(); i++) {
-        // 1. Get their index in the spritesheet, as well as their offset (i.e. their
-        //    position relative to the whole sentence)
-        int spritesheet_index = (int) text[i];  // ascii value of character
-        float offset = (font_size + spacing) * i;
-
-        // 2. Using the spritesheet index, we can calculate our U- and V-coordinates
-        float u_coordinate = (float) (spritesheet_index % FONTBANK_SIZE) / FONTBANK_SIZE;
-        float v_coordinate = (float) (spritesheet_index / FONTBANK_SIZE) / FONTBANK_SIZE;
-
-        // 3. Inset the current pair in both vectors
-        vertices.insert(vertices.end(), {
-            offset + (-0.5f * font_size), 0.5f * font_size,
-            offset + (-0.5f * font_size), -0.5f * font_size,
-            offset + (0.5f * font_size), 0.5f * font_size,
-            offset + (0.5f * font_size), -0.5f * font_size,
-            offset + (0.5f * font_size), 0.5f * font_size,
-            offset + (-0.5f * font_size), -0.5f * font_size,
-        });
-
-        texture_coordinates.insert(texture_coordinates.end(), {
-            u_coordinate, v_coordinate,
-            u_coordinate, v_coordinate + height,
-            u_coordinate + width, v_coordinate,
-            u_coordinate + width, v_coordinate + height,
-            u_coordinate + width, v_coordinate,
-            u_coordinate, v_coordinate + height,
-        });
-    }
-
-    // 4. And render all of them using the pairs
-    mat4 model_matrix = mat4(1.0f);
-    model_matrix = translate(model_matrix, position);
-
-    shader_program->SetModelMatrix(model_matrix);
-    glUseProgram(shader_program->programID);
-
-    glVertexAttribPointer(shader_program->positionAttribute, 2, GL_FLOAT, false, 0,
-                          vertices.data());
-    glEnableVertexAttribArray(shader_program->positionAttribute);
-
-    glVertexAttribPointer(shader_program->texCoordAttribute, 2, GL_FLOAT,
-                          false, 0, texture_coordinates.data());
-    glEnableVertexAttribArray(shader_program->texCoordAttribute);
-
-    glBindTexture(GL_TEXTURE_2D, font_texture_id);
-    glDrawArrays(GL_TRIANGLES, 0, (int) (text.size() * 6));
-
-    glDisableVertexAttribArray(shader_program->positionAttribute);
-    glDisableVertexAttribArray(shader_program->texCoordAttribute);
-}
-
-
-GLuint load_texture(const char* filepath) {
-    int width, height, number_of_components;
-    unsigned char* image = stbi_load(filepath, &width, &height, &number_of_components,
-                                     STBI_rgb_alpha);
-
-    if (not image) {
-        LOG("Unable to load image. Make sure the path is correct.");
-        assert(false);
-    }
-
-    GLuint textureID;
-    glGenTextures(NUMBER_OF_TEXTURES, &textureID);
-
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexImage2D(GL_TEXTURE_2D, LEVEL_OF_DETAIL, GL_RGBA, width, height, TEXTURE_BORDER,
-                 GL_RGBA, GL_UNSIGNED_BYTE, image);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    stbi_image_free(image);
-
-    return textureID;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
