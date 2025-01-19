@@ -11,9 +11,9 @@
 #include "stb_image.h"
 
 
-
-void Utility::draw_text(ShaderProgram *shader_program, GLuint font_texture_id, std::string text,
-               float font_size, float spacing, glm::vec3 position) {
+void Utility::draw_text(ShaderProgram *shader_program, GLuint font_texture_id,
+                        std::string text,
+                        float font_size, float spacing, glm::vec3 position) {
     // Scale the size of the fontbank in the UV-plane
     // We will use this for spacing and positioning
     float width = 1.0f / FONTBANK_SIZE;

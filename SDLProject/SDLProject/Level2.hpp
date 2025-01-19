@@ -1,18 +1,19 @@
-#ifndef LEVEL1_H
-#define LEVEL1_H
+#ifndef LEVEL2_H
+#define LEVEL2_H
 
 #include "Scene.hpp"
 
-class Level1 : public Scene {
+class Level2 : public Scene {
 public:
-    Level1() { m_number_of_enemies = ENEMY_COUNT; }
+    Level2() { m_number_of_enemies = ENEMY_COUNT; }
     
     int ENEMY_COUNT = 1;
     
-    ~Level1();
+    ~Level2();
+    
     void initialise() override;
     void update(float delta_time) override;
     void render(ShaderProgram *program) override;
 };
 
-#endif // LEVEL1_H
+#endif // LEVEL2_H

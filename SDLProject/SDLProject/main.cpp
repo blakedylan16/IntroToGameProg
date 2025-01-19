@@ -27,32 +27,22 @@
 #include <ctime>
 #include "cmath"
 
-#include "Map.hpp"
-#include "Entity.hpp"
+#define NUMBER_OF_SCENES 4
+#define LEFT_EDGE 5.0f
+
 #include "Utility.hpp"
+#include "Scene.hpp"
+#include "Level1.hpp"
+#include "Level2.hpp"
+#include "Level3.hpp"
+#include "Start.hpp"
 
-#define LEVEL_WIDTH 14
-#define LEVEL_HEIGHT 5
 #define FIXED_TIMESTEP 0.0166666f
-#define ENEMY_COUNT 3
-
-
 
 using namespace glm;
 
 /* ----- GAME STATE ----- */
 enum AppStatus { RUNNING, PAUSED, WON, LOST, TERMINATED };
-
-struct GameState {
-    Entity *player;
-    std::vector<Entity*> enemies;
-        
-    Map *map;
-        
-    Mix_Music *bgm;
-    Mix_Chunk *jump_sfx;
-};
-
 
 /* ----- CONSTANTS ----- */
 
@@ -99,23 +89,22 @@ constexpr int   CD_QUAL_FREQ    = 44100,  // compact disk (CD) quality frequency
                 AUDIO_CHAN_AMT  = 2,
                 AUDIO_BUFF_SIZE = 4096;
 
-const vec3 GRAVITY = vec3(0.0f, -10.0f, 0.0f);
-
-unsigned int LEVEL_DATA[] = {
-    20,   0,   0,   0,   0, 0, 0,   0,   0,   0,   0,   0,   0,   0,
-    120,   0,   0,   0,   0, 0, 0,   0,   0,   0,   0,   0,   0,   0,
-    121,  23,  0,   0,   0, 0, 0,   0,   0,   21,  22,  22,  22,  23,
-    121, 122, 22,  23,  0, 0, 21,  22,  22,  122, 122, 122, 122, 123,
-    121, 122, 122, 123, 0, 0, 121, 122, 122, 122, 122, 122, 122, 123
-};
-
-
 /* ----- VARIABLES ----- */
 
-GameState g_state;
+Scene   *g_current_scene;
+Level1  *g_level_1;
+Level2  *g_level_2;
+Level3  *g_level_3;
+Start   *g_start;
+
+Scene *scenes[4];
+int scene_index;
+bool next_scene;
+
+int *g_lives;
 
 SDL_Window* g_display_window = nullptr;
-AppStatus g_app_status = PAUSED;
+AppStatus g_app_status = RUNNING;
 
 ShaderProgram g_shader_program = ShaderProgram();
 
@@ -143,13 +132,12 @@ void update();
 void render();
 void shutdown();
 
-void draw_object(mat4 &object_model_matrix, GLuint &object_texture_id);
+void switch_to_scene(Scene *scene);
 
 int main(int argc, char* argv[]) {
     initialise();
 
-    while (g_app_status != TERMINATED)
-    {
+    while (g_app_status != TERMINATED) {
         process_input();
         update();
         render();
@@ -163,7 +151,7 @@ void initialise() {
     /* ----- GENERAL SET-UP ----- */
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
     
-    g_display_window = SDL_CreateWindow("Bird Lander",
+    g_display_window = SDL_CreateWindow("Platformer",
                                       SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                       WINDOW_WIDTH, WINDOW_HEIGHT,
                                       SDL_WINDOW_OPENGL);
@@ -195,74 +183,27 @@ void initialise() {
     
     glClearColor(BG_RED, BG_BLUE, BG_GREEN, BG_OPACITY);
     
+    g_font_texture_id = Utility::load_texture(FONTSHEET_FILEPATH);
     
-    /* ----- AUDIO SET-UP ----- */
-    // Start Audio
-    Mix_OpenAudio (
-        CD_QUAL_FREQ,        // the frequency to playback audio at (in Hz)
-        MIX_DEFAULT_FORMAT,  // audio format
-        AUDIO_CHAN_AMT,      // number of channels (1 is mono, 2 is stereo, etc).
-        AUDIO_BUFF_SIZE      // audio buffer size in sample FRAMES (total samples divided by channel count)
-    );
+    /* ----- SCENE SET-UP ----- */
+    g_lives = new int;
+    *g_lives = 3;
+    g_level_1 = new Level1();
+    g_level_2 = new Level2();
+    g_level_3 = new Level3();
+    g_start = new Start();
+    scene_index = 0;
+    scenes[0] = g_start;
+    scenes[1] = g_level_1;
+    scenes[2] = g_level_2;
+    scenes[3] = g_level_3;
+    switch_to_scene(scenes[scene_index]);
     
-    // Similar to our custom function load_texture
-    g_state.bgm = Mix_LoadMUS(BGM_FILEPATH);
-
-    // This will schedule the music object to begin mixing for playback.
-    // The first parameter is the pointer to the mp3 we loaded
-    // and second parameter is the number of times to loop.
-    Mix_PlayMusic(g_state.bgm, LOOP_FOREVER);
-
-    // Set the music to half volume
-    // MIX_MAX_VOLUME is a pre-defined constant
+    /* ----- MUSIC SET-UP ----- */
+    g_current_scene->m_game_state.bgm = Mix_LoadMUS(BGM_FILEPATH);
+    Mix_PlayMusic(g_current_scene->m_game_state.bgm, LOOP_FOREVER);
     Mix_VolumeMusic(MIX_MAX_VOLUME / 4.0f);
     
-    g_state.jump_sfx = Mix_LoadWAV(JUMP_SFX_FILEPATH);
-    
-    
-//    Mix_Volume(ALL_SFX_CHN, MIX_MAX_VOLUME / 4);
-    
-    
-    /* ----- MAP SET-UP ----- */
-    GLuint map_texture_id = Utility::load_texture(MAP_TILESET_FILEPATH);
-    g_state.map = new Map(LEVEL_WIDTH, LEVEL_HEIGHT, LEVEL_DATA,
-                          map_texture_id, 1.0f, 20, 9);
-    
-    /* ----- PLAYER SET-UP ----- */
-    GLuint sprite_tex_id = Utility::load_texture(SPRITESHEET_FILEPATH);
-    
-    int player_sprite_index = 0; // which sprite I'm using. specific to tilemap
-    std::vector<int> player_walking_anim = { player_sprite_index, player_sprite_index + 1 };
-    LOG("player walking index at init: " << player_walking_anim[0]);
-    g_state.player = new Entity(sprite_tex_id,
-                                4.0f,       // speed
-                                GRAVITY,    // acceleration
-                                7.5f,       // jumping power
-                                player_walking_anim,
-                                .5f,       // size
-                                PLAYER);
-    g_state.player->update(g_state.map, 0.0f);
-    g_state.player->set_pos(vec3(1.0f, 0.0f, 0.0f));
-    
-    /* ----- ENEMY SET-UP ----- */
-    int enemy_sprite_index = 21;
-    std::vector<int> enemy_walking_anim = { enemy_sprite_index, enemy_sprite_index + 1 };
-    LOG("enemy walking index at init: " << enemy_walking_anim[0]);
-    std::vector<AIType> ai_types = { GUARD, WALKER, JUMPER };
-    for (int i = 0; i < ENEMY_COUNT; i++) {
-        g_state.enemies.push_back(new Entity(sprite_tex_id,
-                                    1.0f,       // speed
-                                    GRAVITY,    // acceleration
-                                    3.0f,       // jumping power
-                                    enemy_walking_anim,
-                                    .75,        // size
-                                    ENEMY, ai_types[i], IDLE));
-        g_state.enemies[i]->set_pos(vec3((i + 1) * 3.0f, 0.0f, 0.0f));
-        g_state.enemies[i]->update(g_state.map);
-    }
-    
-    g_font_texture_id = Utility::load_texture(FONTSHEET_FILEPATH);
-
     /* ----- BLENDING ----- */
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -270,10 +211,8 @@ void initialise() {
 
 void process_input() {
     
-    g_state.player->set_mov(vec3(0.0f));
-    
-//    for (int i = 0; i < ENEMY_COUNT; i++)
-//        g_state.enemies[i].set_mov(vec3(0.0f));
+    if (g_current_scene != g_start)
+        g_current_scene->m_game_state.player->set_mov(vec3(0.0f));
     
     SDL_Event event;
     while (SDL_PollEvent(&event))
@@ -284,16 +223,24 @@ void process_input() {
                 
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
-                    case SDLK_q: g_app_status = TERMINATED; break;
-                        
+                    case SDLK_q:
+                        g_app_status = TERMINATED;
+                        break;
                     case SDLK_SPACE:
                         if (g_app_status == PAUSED) g_app_status = RUNNING;
                         else if (g_app_status == RUNNING) g_app_status = PAUSED;
                         break;
+                    case SDLK_RETURN:
+                        if (g_current_scene == g_start)
+                            next_scene = true;
                     case SDLK_w:
-                        if (g_app_status == RUNNING) {
-                            g_state.player->jump();
-                            Mix_PlayChannel(NEXT_CHNL, g_state.jump_sfx, PLAY_ONCE);
+                        if (g_current_scene != g_start){
+                            if (g_current_scene->m_game_state.player->get_collided_bottom()) {
+                                g_current_scene->m_game_state.player->jump();
+                                Mix_PlayChannel(NEXT_CHNL,
+                                                g_current_scene->m_game_state.jump_sfx,
+                                                PLAY_ONCE);
+                            }
                         }
                     default: break;
                 }
@@ -303,10 +250,13 @@ void process_input() {
     
     const Uint8 *key_state = SDL_GetKeyboardState(NULL);
     
-    if (key_state[SDL_SCANCODE_A])          g_state.player->move_left();
-    else if (key_state[SDL_SCANCODE_D])     g_state.player->move_right();
-    
-    if (length(g_state.player->get_mov()) > 1.0f) g_state.player->normalize_movement();
+    if (g_current_scene != g_start){
+        if (key_state[SDL_SCANCODE_A])      g_current_scene->m_game_state.player->move_left();
+        else if (key_state[SDL_SCANCODE_D]) g_current_scene->m_game_state.player->move_right();
+        
+        if (length(g_current_scene->m_game_state.player->get_mov()) > 1.0f)
+                g_current_scene->m_game_state.player->normalize_movement();
+    }
     
 }
 
@@ -323,38 +273,45 @@ void update() {
         return;
     }
     while (delta_time >= FIXED_TIMESTEP) {
-        if (g_app_status == RUNNING) {
-            if (not g_state.player->get_active_state()) {
-                g_app_status = LOST;
-                return;
-            }
-            if (g_state.enemies.size() <= 0) {
-                g_app_status = WON;
-                return;
-            }
-            g_state.player->update(g_state.map, FIXED_TIMESTEP, nullptr,
-                                   g_state.enemies, ENEMY_COUNT);
-            for (int i = 0; i < g_state.enemies.size(); i++) {
-                if (g_state.enemies[i]->get_active_state())
-                    g_state.enemies[i]->update(g_state.map, FIXED_TIMESTEP, g_state.player);
-            }
-                
-        }
+        // Update whole scene
+        if (g_app_status == RUNNING)
+            g_current_scene->update(FIXED_TIMESTEP);
+        
+        if (g_current_scene->m_game_state.player->get_pos().y < -10.0f)
+            g_current_scene->m_game_state.player->kill_off();
+            
         delta_time -= FIXED_TIMESTEP;
     }
     
     g_time_accumulator = delta_time;
     
+    int enemy_count = 0;
+    for (Entity *enemy : g_current_scene->m_game_state.enemies)
+        if (enemy->get_active_state())
+            enemy_count++;
+    if (*g_lives <= 0) g_app_status = LOST;
+
+    if (enemy_count == 0) next_scene = true;
+    
     g_view_matrix = mat4(1.0f);
-    g_view_matrix = translate(g_view_matrix,
-                              vec3(-g_state.player->get_pos().x, 0.0f, 0.0f));
+    if (g_current_scene != g_start and
+        g_current_scene->m_game_state.player->get_pos().x > LEFT_EDGE) {
+            g_view_matrix = translate(g_view_matrix,
+                                      vec3(-g_current_scene->m_game_state.player->get_pos().x,
+                                           3.75, 0));
+    } else g_view_matrix = translate(g_view_matrix, vec3(-5, 3.75, 0));
     
-    int dead_enemies = 0;
-    for (int i = 0; i < g_state.enemies.size(); i++)
-        if (not g_state.enemies[i]->get_active_state())
-            dead_enemies++;
-    if (dead_enemies == ENEMY_COUNT) g_app_status = WON;
-    
+    if (next_scene) {
+        scene_index ++;
+        if (scene_index > 3) {
+            g_app_status = WON;
+            return;
+        } else {
+            switch_to_scene(scenes[scene_index]);
+            next_scene = false;
+        }
+        
+    }
 }
 
 void render() {
@@ -362,26 +319,25 @@ void render() {
     
     glClear(GL_COLOR_BUFFER_BIT);
     
-    g_state.map->render(&g_shader_program);
-        
-    g_state.player->render(&g_shader_program);
+    g_current_scene->render(&g_shader_program);
     
-    for (int i = 0; i < ENEMY_COUNT; i++)
-        g_state.enemies[i]->render(&g_shader_program);
-    float curr_pos_x = g_state.player->get_pos().x;
-
-    if (g_app_status == PAUSED) {
-        Utility::draw_text(&g_shader_program, g_font_texture_id, "Hop on the enemies to win!",
-                  0.3f, 0.03f, vec3(curr_pos_x - 2, 2.0f, 0.0f));
-        Utility::draw_text(&g_shader_program, g_font_texture_id, "Hit Space to Start!",
-                  0.3f, 0.03f, vec3(curr_pos_x - 1.5, 1.6f, 0.0f));
-    } else if (g_app_status == WON) {
-        Utility::draw_text(&g_shader_program, g_font_texture_id, "You won!", 0.3f, 0.03f,
-                  vec3(curr_pos_x - 2, 2.0f, 0.0f));
-    } else if (g_app_status == LOST) {
-        Utility::draw_text(&g_shader_program, g_font_texture_id, "You lost :(", 0.3f, 0.03f,
-                  vec3(curr_pos_x - 2, 2.0f, 0.0f));
+    float curr_pos_x;
+    if (g_current_scene->m_game_state.player->get_pos().x > LEFT_EDGE)
+        curr_pos_x = g_current_scene->m_game_state.player->get_pos().x;
+    else curr_pos_x = 4;
+    
+    if (g_current_scene != g_start) {
+        std::string lives_string = "Lives: " + std::to_string(*g_lives);
+        Utility::draw_text(&g_shader_program, g_font_texture_id, lives_string,
+                           0.3f, 0.0005f, vec3(1.0f, -.5f, 0.0f));
     }
+
+    if (g_app_status == WON)
+        Utility::draw_text(&g_shader_program, g_font_texture_id, "You won! :)", 0.3f, 0.03f,
+                           vec3(curr_pos_x - 1.0f, -1.5f, 0.0f));
+    else if (g_app_status == LOST)
+        Utility::draw_text(&g_shader_program, g_font_texture_id, "You lost! :(", 0.3f, 0.03f,
+                           vec3(curr_pos_x - 1.0f, -1.5f, 0.0f));
 
     SDL_GL_SwapWindow(g_display_window);
 }
@@ -390,13 +346,17 @@ void shutdown() {
     
     SDL_Quit();
     
-    for (Entity* enemy : g_state.enemies)
-        delete enemy;
-    g_state.enemies.clear();
-
-    delete    g_state.player;
-    delete    g_state.map;
+    delete g_level_1;
+    delete g_level_2;
+    delete g_level_3;
+    delete g_lives;
+    delete g_start;
     
-    Mix_FreeChunk(g_state.jump_sfx);
-    Mix_FreeMusic(g_state.bgm);
+    g_current_scene = nullptr;
+}
+
+void switch_to_scene(Scene *scene) {
+    g_current_scene = scene;
+    g_current_scene->initialise();
+    g_current_scene->set_lives(g_lives);
 }

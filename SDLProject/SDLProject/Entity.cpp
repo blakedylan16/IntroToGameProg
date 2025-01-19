@@ -54,6 +54,7 @@ m_walk_animation(walk_anim), m_acceleration(accel), m_size(size), m_entity_type(
     activate();
     m_is_facing_right = true;
     set_scale(vec3(m_size, m_size, 0.0f));
+    m_hitbox_size = m_size * .8;
 }
 // AI constructor
 Entity::Entity(GLuint tex_id, float speed, vec3 accel, float jump_pow,
@@ -67,6 +68,7 @@ m_ai_type(ai_type), m_ai_state(ai_state) {
     activate();
     m_is_facing_right = false;
     set_scale(vec3(m_size, m_size, 0.0f));
+    m_hitbox_size = m_size * .8;
 }
 
 Entity::~Entity() { }
@@ -186,9 +188,11 @@ void Entity::render(ShaderProgram* program) {
 }
 
 bool const Entity::check_collision(Entity *other) const {
-    float x_dist = fabs(m_position.x - other->m_position.x) - ((m_size + other->m_size) / 2.0f);
-    float y_dist = fabs(m_position.y - other->m_position.y) - ((m_size + other->m_size) / 2.0f);
-    return x_dist < 0.0f && y_dist < 0.0f;
+    float x_dist = fabs(m_position.x - other->m_position.x);
+    x_dist -= ((m_hitbox_size + other->m_hitbox_size) / 2.0f);
+    float y_dist = fabs(m_position.y - other->m_position.y);
+    y_dist -= ((m_size + other->m_size) / 2.0f);
+    return x_dist < 0.0f and y_dist < 0.0f;
 }
 
 void Entity::check_collision_y(std::vector<Entity*> objects, int object_count) {
@@ -257,17 +261,17 @@ void Entity::check_collision_y(Map *map) {
     
     // If the map is solid, check the top three points
     if (map->is_solid(top, &penetration_x, &penetration_y)
-        && m_velocity.y > 0) {
+        and m_velocity.y > 0) {
         m_position.y -= penetration_y;
         m_velocity.y = 0;
         m_collided_top = true;
     } else if (map->is_solid(top_left, &penetration_x, &penetration_y)
-               && m_velocity.y > 0) {
+               and m_velocity.y > 0) {
         m_position.y -= penetration_y;
         m_velocity.y = 0;
         m_collided_top = true;
     } else if (map->is_solid(top_right, &penetration_x, &penetration_y)
-               && m_velocity.y > 0) {
+               and m_velocity.y > 0) {
         m_position.y -= penetration_y;
         m_velocity.y = 0;
         m_collided_top = true;
@@ -275,17 +279,17 @@ void Entity::check_collision_y(Map *map) {
     
     // And the bottom three points
     if (map->is_solid(bottom, &penetration_x, &penetration_y)
-        && m_velocity.y < 0) {
+        and m_velocity.y < 0) {
         m_position.y += penetration_y;
         m_velocity.y = 0;
         m_collided_bottom = true;
     } else if (map->is_solid(bottom_left, &penetration_x, &penetration_y)
-               && m_velocity.y < 0) {
+               and m_velocity.y < 0) {
             m_position.y += penetration_y;
             m_velocity.y = 0;
             m_collided_bottom = true;
     } else if (map->is_solid(bottom_right, &penetration_x, &penetration_y)
-             && m_velocity.y < 0) {
+               and m_velocity.y < 0) {
         m_position.y += penetration_y;
         m_velocity.y = 0;
         m_collided_bottom = true;
@@ -301,13 +305,13 @@ void Entity::check_collision_x(Map *map) {
     float penetration_y = 0;
     
     if (map->is_solid(left, &penetration_x, &penetration_y)
-        && m_velocity.x < 0) {
+        and m_velocity.x < 0) {
         m_position.x += penetration_x;
         m_velocity.x = 0;
         m_collided_left = true;
     }
     if (map->is_solid(right, &penetration_x, &penetration_y)
-        && m_velocity.x > 0) {
+        and m_velocity.x > 0) {
         m_position.x -= penetration_x;
         m_velocity.x = 0;
         m_collided_right = true;
@@ -329,12 +333,12 @@ void Entity::check_platform_x(Map *map, float delta_x) {
     bool solid_bottom_left = map->is_solid(bottom_left, &penetration_x, &penetration_y);
     bool solid_bottom_right = map->is_solid(bottom_right, &penetration_x, &penetration_y);
 
-    if (not solid_bottom_left && m_velocity.x < 0) {
+    if (not solid_bottom_left and m_velocity.x < 0) {
         m_position.x += delta_x;
         m_velocity.x = 0;  // Stop horizontal movement
         m_gap_bottom_left = true;  // Set collision flag
     }
-    if (not solid_bottom_right && m_velocity.x > 0) {
+    if (not solid_bottom_right and m_velocity.x > 0) {
         m_position.x -= delta_x;
         m_velocity.x = 0;
         m_gap_bottom_right = true;
@@ -448,10 +452,17 @@ void Entity::kill_off() {
     m_position = vec3(0.0f, -10.0f, 0.0f);
 
     m_velocity = vec3(0.0f, 0.0f, 0.0f);
-    m_acceleration = vec3(0.0f, 0.0f, 0.0f);
 
     m_model_matrix = mat4(1.0f);
 
     LOG("Enemy has been killed off.");
+}
+
+void Entity::reset(Map *map, vec3 pos) {
+    activate();
+    m_is_facing_right = true;
+    m_position = pos;
+    m_movement = vec3(0.0f);
+    update(map);
 }
 

@@ -33,10 +33,31 @@ struct GameState
 };
 
 class Scene {
+protected:
+    int *g_lives;
 public:
-    int m_number_of_enemies = 1;
+    
+    Scene();
+    
+    virtual ~Scene() {}
     
     GameState m_game_state;
+    
+    GLuint  g_map_texture_id,
+            g_font_texture_id,
+            g_sprite_texture_id;
+    
+    static constexpr const char *SPRITESHEET_FILEPATH = "tilemap-characters_packed.png",
+                        *FONTSHEET_FILEPATH = "font1.png",
+                        *MAP_TILESET_FILEPATH = "tilemap_packed.png",
+                        *BGM_FILEPATH = "Sergio_music.mp3",
+                        *JUMP_SFX_FILEPATH = "jump.wav";
+    
+    const glm::vec3 GRAVITY = glm::vec3(0.0f,-6.0f, 0.0f);
+    
+    int m_number_of_enemies = 1;
+    
+    void set_lives(int *lives) { g_lives = lives; }
     
     virtual void initialise() = 0;
     virtual void update(float delta_time) = 0;

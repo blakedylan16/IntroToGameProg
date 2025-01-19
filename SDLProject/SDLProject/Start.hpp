@@ -1,15 +1,14 @@
-#ifndef LEVEL1_H
-#define LEVEL1_H
+#ifndef START_H
+#define START_H
 
 #include "Scene.hpp"
 
-class Level1 : public Scene {
+class Start : public Scene {
 public:
-    Level1() { m_number_of_enemies = ENEMY_COUNT; }
-    
     int ENEMY_COUNT = 1;
     
-    ~Level1();
+    ~Start();
+    
     void initialise() override;
     void update(float delta_time) override;
     void render(ShaderProgram *program) override;

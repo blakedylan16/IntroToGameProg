@@ -60,6 +60,7 @@ private:
 //    float   m_width     = 1,
 //            m_height    = 1;
     float m_size = 1;
+    float m_hitbox_size;
     
     /* ----- COLLISION ----- */
     bool    m_collided_top          = false,
@@ -112,11 +113,12 @@ public:
     void move_left()    { m_movement.x = -1.0f; m_is_facing_right = false; }
     void move_right()   { m_movement.x = 1.0f; m_is_facing_right = true; }
     
-    void jump() { if(m_collided_bottom) m_is_jumping = true; }
+    void jump() { m_is_jumping = true; }
     
     void activate()     { m_is_active = true; }
     void deactivate()   { m_is_active = false; }
     void kill_off();
+    void reset(Map *map, vec3 pos);
     
     void init_anim();
     void add_anim_time(const float delta_time) { m_animation_time += delta_time; };
